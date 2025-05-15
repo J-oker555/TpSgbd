@@ -1,0 +1,78 @@
+services:
+  # --- MariaDB Galera Cluster ---
+  mariadb-node1:
+    image: mariadb:10.6 # Utiliser une version compatible avec Galera
+    container_name: mariadb-node1
+    command:
+      - --wsrep-new-cluster # Le premier nœud initialise le cluster
+      - --wsrep_node_name=mariadb-node1
+      - --wsrep_cluster_address=gcomm:// # Vide pour le premier, les autres rejoindront
+      - --wsrep_sst_method=rsync # Méthode pour la synchronisation initiale
+    environment:
+      - MARIADB_ROOT_PASSWORD=myRootPassword123!
+      - MARIADB_DATABASE=ticketing_db
+      - MARIADB_USER=app_user
+      - MARIADB_PASSWORD=app_password123!
+      - GALERA_CLUSTER_NAME=tp_galera_cluster
+      - GALERA_NODE_ADDRESS=mariadb-node1 # Adresse de ce nœud
+      - GALERA_NODE_NAME=mariadb-node1
+    volumes:
+      - ./db_init:/docker-entrypoint-initdb.d # Pour le script SQL initial
+      - galera_data_node1:/var/lib/mysql
+    networks:
+      - app-network
+    # Décommentez pour exposer le port pour un accès direct (débogage)
+    # ports:
+    #   - "3307:3306"
+
+  mariadb-node2:
+    image: mariadb:10.6
+    container_name: mariadb-node2
+    command:
+      - --wsrep_node_name=mariadb-node2
+      - --wsrep_cluster_address=gcomm://mariadb-node1 # Rejoindre le nœud 1
+      - --wsrep_sst_method=rsync
+    environment:
+      - MARIADB_ROOT_PASSWORD=myRootPassword123! # DOIT être le même pour le SST
+      - GALERA_CLUSTER_NAME=tp_galera_cluster
+      - GALERA_NODE_ADDRESS=mariadb-node2
+      - GALERA_NODE_NAME=mariadb-node2
+    depends_on:
+      - mariadb-node1
+    volumes:
+      - galera_data_node2:/var/lib/mysql
+    networks:
+      - app-network
+    # ports:
+    #   - "3308:3306"
+
+  mariadb-node3:
+    image: mariadb:10.6
+    container_name: mariadb-node3
+    command:
+      - --wsrep_node_name=mariadb-node3
+      - --wsrep_cluster_address=gcomm://mariadb-node1,mariadb-node2 # Peut rejoindre l'un ou l'autre
+      - --wsrep_sst_method=rsync
+    environment:
+      - MARIADB_ROOT_PASSWORD=myRootPassword123!
+      - GALERA_CLUSTER_NAME=tp_galera_cluster
+      - GALERA_NODE_ADDRESS=mariadb-node3
+      - GALERA_NODE_NAME=mariadb-node3
+    depends_on:
+      - mariadb-node1 # Dépend des autres pour s'assurer qu'ils démarrent en premier
+      - mariadb-node2
+    volumes:
+      - galera_data_node3:/var/lib/mysql
+    networks:
+      - app-network
+    # ports:
+    #   - "3309:3306"
+
+volumes:
+  galera_data_node1:
+  galera_data_node2:
+  galera_data_node3:
+
+networks:
+  app-network:
+    driver: bridge
