@@ -1,4 +1,3 @@
-// event-booking-service/src/services/bookingService.js
 const pool = require('../config/db');
 const eventRepository = require('../repositories/eventRepository');
 const bookingRepository = require('../repositories/bookingRepository');

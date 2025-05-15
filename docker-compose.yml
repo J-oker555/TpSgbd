@@ -1,57 +1,65 @@
+version: '3.8'
+
 services:
   # --- MariaDB Galera Cluster ---
   mariadb-node1:
-    image: mariadb:10.6 # Utiliser une version compatible avec Galera
+    image: mariadb:10.6
     container_name: mariadb-node1
     command:
-      - --wsrep-new-cluster # Le premier nœud initialise le cluster
+      - --wsrep-new-cluster
       - --wsrep_node_name=mariadb-node1
-      - --wsrep_cluster_address=gcomm:// # Vide pour le premier, les autres rejoindront
-      - --wsrep_sst_method=rsync # Méthode pour la synchronisation initiale
+      - --wsrep_cluster_address=gcomm://
+      - --wsrep_sst_method=rsync
     environment:
       - MARIADB_ROOT_PASSWORD=myRootPassword123!
-      - MARIADB_DATABASE=ticketing_db
-      - MARIADB_USER=app_user
-      - MARIADB_PASSWORD=app_password123!
+      - MARIADB_DATABASE=ticketing_db # Création automatique de cette DB
+      - MARIADB_USER=app_user # Création automatique de cet utilisateur
+      - MARIADB_PASSWORD=app_password123! # Mot de passe pour app_user
       - GALERA_CLUSTER_NAME=tp_galera_cluster
-      - GALERA_NODE_ADDRESS=mariadb-node1 # Adresse de ce nœud
+      - GALERA_NODE_ADDRESS=mariadb-node1
       - GALERA_NODE_NAME=mariadb-node1
     volumes:
-      - ./db_init:/docker-entrypoint-initdb.d # Pour le script SQL initial
-      - galera_data_node1:/var/lib/mysql
+      - ./db_init:/docker-entrypoint-initdb.d # Scripts SQL exécutés au premier démarrage
+      - galera_data_node1:/var/lib/mysql # Persistance des données
     networks:
       - app-network
-    # Décommentez pour exposer le port pour un accès direct (débogage)
-    # ports:
-    #   - "3307:3306"
+    healthcheck: # Vérifier que le nœud est prêt à accepter des connexions
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-pmyRootPassword123!"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mariadb-node2:
     image: mariadb:10.6
     container_name: mariadb-node2
     command:
       - --wsrep_node_name=mariadb-node2
-      - --wsrep_cluster_address=gcomm://mariadb-node1 # Rejoindre le nœud 1
+      - --wsrep_cluster_address=gcomm://mariadb-node1
       - --wsrep_sst_method=rsync
     environment:
-      - MARIADB_ROOT_PASSWORD=myRootPassword123! # DOIT être le même pour le SST
+      - MARIADB_ROOT_PASSWORD=myRootPassword123!
       - GALERA_CLUSTER_NAME=tp_galera_cluster
       - GALERA_NODE_ADDRESS=mariadb-node2
       - GALERA_NODE_NAME=mariadb-node2
     depends_on:
-      - mariadb-node1
+      mariadb-node1: # S'assurer que node1 est au moins démarré
+        condition: service_healthy # Attendre que node1 soit "healthy"
     volumes:
       - galera_data_node2:/var/lib/mysql
     networks:
       - app-network
-    # ports:
-    #   - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-pmyRootPassword123!"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mariadb-node3:
     image: mariadb:10.6
     container_name: mariadb-node3
     command:
       - --wsrep_node_name=mariadb-node3
-      - --wsrep_cluster_address=gcomm://mariadb-node1,mariadb-node2 # Peut rejoindre l'un ou l'autre
+      - --wsrep_cluster_address=gcomm://mariadb-node1,mariadb-node2
       - --wsrep_sst_method=rsync
     environment:
       - MARIADB_ROOT_PASSWORD=myRootPassword123!
@@ -59,14 +67,80 @@ services:
       - GALERA_NODE_ADDRESS=mariadb-node3
       - GALERA_NODE_NAME=mariadb-node3
     depends_on:
-      - mariadb-node1 # Dépend des autres pour s'assurer qu'ils démarrent en premier
-      - mariadb-node2
+      mariadb-node1:
+        condition: service_healthy
+      mariadb-node2:
+        condition: service_healthy
     volumes:
       - galera_data_node3:/var/lib/mysql
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-pmyRootPassword123!"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Application Services ---
+  event-booking-service:
+    build:
+      context: ./event-booking-service
+      dockerfile: Dockerfile
+    container_name: event-booking-service
+    ports:
+      - "3000:3000" # Le port interne du conteneur sera 3000 (lu depuis process.env.PORT)
+    environment:
+      - PORT=3000 # Port sur lequel l'app Node.js écoute DANS le conteneur
+      - DOCKER_DB_HOST=mariadb-node1 # Connexion au premier nœud du cluster
+      - DOCKER_DB_USER=app_user
+      - DOCKER_DB_PASSWORD=app_password123!
+      - DOCKER_DB_NAME=ticketing_db
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3001 # Communication interne Docker
+    volumes:
+      # Pour le développement, permet le hot-reload si nodemon est utilisé dans le CMD du Dockerfile
+      # En production, on ne monterait pas le code source.
+      - ./event-booking-service/src:/usr/src/app/src
+    depends_on: # Attendre que les nœuds DB soient prêts
+      mariadb-node1:
+        condition: service_healthy
+      mariadb-node2:
+        condition: service_healthy
+      mariadb-node3:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    # Pas besoin d'exposer le port à l'hôte si seul event-booking-service y accède
     # ports:
-    #   - "3309:3306"
+    #   - "3001:3001"
+    environment:
+      - PORT=3001 # Port sur lequel l'app Node.js écoute DANS le conteneur
+    networks:
+      - app-network
+    restart: unless-stopped
+    # Pas de depends_on critique ici, mais pourrait dépendre d'une DB s'il en avait une.
+
+  # --- Frontend Nginx ---
+  frontend-nginx:
+    image: nginx:1.25-alpine
+    container_name: frontend-nginx
+    ports:
+      - "8080:80" # Accès public via localhost:8080
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: # Nginx a besoin que le backend soit disponible
+      - event-booking-service
+      # - notification-service # Pas directement, mais logique
+    networks:
+      - app-network
+    restart: unless-stopped
 
 volumes:
   galera_data_node1:

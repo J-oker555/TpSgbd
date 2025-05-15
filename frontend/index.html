@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Réservation d'Événements</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Réservations d'Événements TP</h1>
+    </header>
+
+    <main>
+        <section id="events-section">
+            <h2>Événements Disponibles</h2>
+            <div id="events-list" class="loading">Chargement des événements...</div>
+        </section>
+
+        <hr>
+
+        <section id="booking-section">
+            <h2>Réserver des Places</h2>
+            <form id="booking-form">
+                <div>
+                    <label for="event-select">Choisir un événement :</label>
+                    <select id="event-select" name="eventId" required>
+                        <option value="">-- Sélectionnez --</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="user-name">Votre Nom :</label>
+                    <input type="text" id="user-name" name="userName" required placeholder="Ex: Jean Dupont">
+                </div>
+                <div>
+                    <label for="number-of-seats">Nombre de Places :</label>
+                    <input type="number" id="number-of-seats" name="numberOfSeats" min="1" value="1" required>
+                </div>
+                <button type="submit" id="submit-booking-btn">Réserver</button>
+            </form>
+            <div id="booking-result" class="message-area"></div>
+        </section>
+
+        <hr>
+        <!-- Section pour les fonctionnalités Admin (simplifié) -->
+        <section id="admin-section">
+            <h2>Section Administrateur</h2>
+            <div class="admin-auth">
+                <label for="admin-key">Clé Admin :</label>
+                <input type="password" id="admin-key" placeholder="Entrez la clé admin">
+                <button id="toggle-admin-view-btn">Voir/Cacher Actions Admin</button>
+            </div>
+
+            <div id="admin-actions" class="hidden">
+                <h3>Créer un Nouvel Événement</h3>
+                <form id="create-event-form">
+                    <div><label>Nom: <input type="text" name="name" required></label></div>
+                    <div><label>Description: <textarea name="description"></textarea></label></div>
+                    <div><label>Date et Heure (YYYY-MM-DD HH:MM:SS): <input type="text" name="dateTime" placeholder="2024-12-31 20:00:00" required></label></div>
+                    <div><label>Capacité Totale: <input type="number" name="totalCapacity" min="1" required></label></div>
+                    <div><label>Prix: <input type="number" name="price" step="0.01" min="0" required></label></div>
+                    <button type="submit">Créer Événement</button>
+                </form>
+                <div id="admin-event-result" class="message-area"></div>
+
+                <h3>Événements (Admin View)</h3>
+                <div id="admin-events-list" class="loading">Chargement...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>TP Architecture Logicielle & Clusters SGBD</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
