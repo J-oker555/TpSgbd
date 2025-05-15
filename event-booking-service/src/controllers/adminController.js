@@ -1,11 +1,7 @@
-// event-booking-service/src/controllers/adminController.js
 const eventRepository = require('../repositories/eventRepository');
 const bookingRepository = require('../repositories/bookingRepository');
 
-// Middleware de "sécurité" admin très basique pour le TP
-// En production : utiliser JWT, rôles, etc.
 const isAdmin = (req, res, next) => {
-    // Pour ce TP, on peut simuler avec un header ou un query param
     if (req.headers['x-admin-key'] === 'SUPER_SECRET_ADMIN_KEY' || req.query.admin === 'true') {
         next();
     } else {
@@ -17,7 +13,6 @@ const isAdmin = (req, res, next) => {
 const createEvent = async (req, res, next) => {
     try {
         const eventData = req.body;
-        // Ajouter des validations ici (ex: champs requis, formats)
         if (!eventData.name || !eventData.dateTime || !eventData.totalCapacity || !eventData.price) {
             return res.status(400).json({ message: 'Missing required event fields.' });
         }

@@ -1,4 +1,3 @@
-// event-booking-service/src/controllers/bookingController.js
 const bookingService = require('../services/bookingService');
 const bookingRepository = require('../repositories/bookingRepository'); // Pour les lectures
 
@@ -8,7 +7,6 @@ const handleCreateBooking = async (req, res, next) => {
     const newBooking = await bookingService.createBooking(bookingRequest);
     res.status(201).json(newBooking);
   } catch (error) {
-    // Si l'erreur a un statusCode défini par le service, l'utiliser
     if (error.statusCode) {
       return res.status(error.statusCode).json({ message: error.message });
     }
@@ -31,8 +29,6 @@ const getBookingsForEvent = async (req, res, next) => {
 
 const getMyBookings = async (req, res, next) => {
   try {
-    // Pour un vrai système, on extrairait userName d'un token JWT ou d'une session
-    // Pour ce TP, on peut le passer en query param ou body (moins sécurisé)
     const userName = req.query.userName;
     if (!userName) {
         return res.status(400).json({ message: "userName query parameter is required."});

@@ -1,6 +1,5 @@
-// event-booking-service/src/clients/notificationClient.js
-const fetch = require('node-fetch'); // Nécessite node-fetch@2 pour CommonJS
-require('dotenv').config({ path: '../../.env' }); // Assurer que .env est chargé pour cette config
+const fetch = require('node-fetch'); 
+require('dotenv').config({ path: '../../.env' });
 
 const NOTIFICATION_SERVICE_BASE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3001';
 
@@ -18,7 +17,7 @@ const sendBookingConfirmationNotification = async (bookingDetails) => {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text(); // Essayer de lire le corps de l'erreur
+      const errorBody = await response.text(); 
       console.error(
         `[NotificationClient] Failed to send booking confirmation. Status: ${response.status}. Body: ${errorBody}`
       );
@@ -28,7 +27,6 @@ const sendBookingConfirmationNotification = async (bookingDetails) => {
     }
   } catch (error) {
     console.error('[NotificationClient] Error sending booking confirmation:', error.message);
-    // En production : ajouter des mécanismes de retry, dead-letter queue, etc.
   }
 };
 

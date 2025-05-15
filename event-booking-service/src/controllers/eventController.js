@@ -1,4 +1,3 @@
-// event-booking-service/src/controllers/eventController.js
 const eventRepository = require('../repositories/eventRepository');
 
 // Pour les clients
@@ -7,7 +6,7 @@ const getAvailableEvents = async (req, res, next) => {
     const events = await eventRepository.findAll();
     res.json(events);
   } catch (error) {
-    next(error); // Passer à la gestion d'erreur globale
+    next(error); 
   }
 };
 

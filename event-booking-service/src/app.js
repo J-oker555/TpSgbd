@@ -1,10 +1,9 @@
-// event-booking-service/src/app.js
-require('dotenv').config({ path: '../../.env' }); // Assurez-vous que .env est chargé
+require('dotenv').config({ path: '../../.env' }); 
 const express = require('express');
 const cors = require('cors');
-const pool = require('./config/db'); // Importer pour forcer l'initialisation et le log
+const pool = require('./config/db'); 
 
-// Importer les routes (seront créées ensuite)
+
 const eventRoutes = require('./routes/eventRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const adminRoutes = require('./routes/adminRoutes'); // Pour les fonctionnalités admin
@@ -13,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
-app.use(cors()); // Activer CORS pour toutes les routes
+app.use(cors()); 
 app.use(express.json()); // Pour parser les corps de requête JSON
 app.use(express.urlencoded({ extended: true })); // Pour parser les corps de requête URL-encoded
 

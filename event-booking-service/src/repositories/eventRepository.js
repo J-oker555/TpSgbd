@@ -1,4 +1,3 @@
-// event-booking-service/src/repositories/eventRepository.js
 const pool = require('../config/db');
 
 const findAll = async () => {

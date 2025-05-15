@@ -1,8 +1,7 @@
-// event-booking-service/src/repositories/bookingRepository.js
 const pool = require('../config/db');
 
 const create = async (bookingData, connection) => {
-  const conn = connection || pool; // Utiliser la connexion transactionnelle si fournie
+  const conn = connection || pool; 
   const { eventId, userName, numberOfSeats, totalPrice, status } = bookingData;
   const [result] = await conn.execute(
     'INSERT INTO bookings (eventId, userName, numberOfSeats, totalPrice, status) VALUES (?, ?, ?, ?, ?)',
@@ -27,8 +26,6 @@ const findByUserName = async (userName) => {
 };
 
 const adminFindAll = async () => {
-    // Requête corrigée : on récupère userName directement depuis la table bookings
-    // et eventName depuis la table events.
     const [rows] = await pool.query(
       'SELECT b.id as bookingId, b.userName, b.numberOfSeats, b.totalPrice, b.status, b.createdAt as bookingCreatedAt, ' +
       'e.id as eventId, e.name as eventName, e.dateTime as eventDateTime ' +
